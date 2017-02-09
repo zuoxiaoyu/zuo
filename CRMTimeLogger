@@ -1,0 +1,92 @@
+public class CRMTimeLogger {
+	public static final String CRM_LOGGER_TIME = "crmtime";
+	private static ILog timelogger;
+
+	private static ThreadLocal<List<Long>> timeThreadLocal = new ThreadLocal<List<Long>>();
+
+	/**
+	 * 时间日志记录开始计时
+	 */
+	public static void timeStart() {
+		if (!getTimeLogger().isDebugEnabled()) {// 控制输出级别
+			return;
+		}
+		long start = System.currentTimeMillis();
+
+		List<Long> timeList = CRMTimeLogger.timeThreadLocal.get();
+		if (timeList == null) {
+			timeList = new ArrayList<Long>();
+			timeList.add(start);
+			CRMTimeLogger.timeThreadLocal.set(timeList);
+		} else {
+			timeList.add(start);
+		}
+
+	}
+
+	/**
+	 * 记录日志调试信息以及消耗的时间
+	 * 
+	 * @param message
+	 *            调试信息
+	 */
+	public static void timeEnd() {
+		timeEnd(3);
+	}
+
+	/**
+	 * 记录日志调试信息以及消耗的时间
+	 * 
+	 * @param message
+	 *            调试信息
+	 */
+	public static void timeEnd(int i) {
+
+		if (!getTimeLogger().isDebugEnabled()) {
+			return;
+		}
+
+		String className = Thread.currentThread().getStackTrace()[i].getClassName();
+		String methodName = Thread.currentThread().getStackTrace()[i].getMethodName();
+		String message = className + "." + methodName + "  \t耗时：";
+
+		long start = 0;
+		List<Long> timeList = CRMTimeLogger.timeThreadLocal.get();
+		if (timeList == null) {
+			return;
+		}
+		int size = timeList.size();
+		if (size != 0) {
+			start = timeList.remove(size - 1);
+			if (size - 1 == 0) {
+				CRMTimeLogger.timeThreadLocal.remove();
+			}
+		}
+
+		long end = System.currentTimeMillis();
+		long duration = end - start;
+		CRMTimeLogger.debug(message + duration + " ms");
+
+	}
+
+	public static void debug(String msg) {
+		getTimeLogger().debug(msg);
+	}
+
+	public static boolean isDebugEnabled() {
+		return getTimeLogger().isDebugEnabled();
+	}
+
+	private static ILog getTimeLogger() {
+		if (SmartModeDetector.isSmartMode()) {
+			return LfwMultiSysFactory.getMultiSysFactory().getLogInstance(CRM_LOGGER_TIME);
+		} else {
+			if (timelogger == null) {
+				synchronized (LfwLogger.class) {
+					if (timelogger == null)
+						timelogger = LfwMultiSysFactory.getMultiSysFactory().getLogInstance(CRM_LOGGER_TIME);
+				}
+			}
+			return timelogger;
+		}
+	}
