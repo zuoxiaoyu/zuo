@@ -1,0 +1,18 @@
+package nc.bs.ca.crmbizpub.log;
+
+
+public class CRMDebugLogger {
+
+	// 记录日志开始时间
+	public static void logStart() {
+		CRMTimeLogger.timeStart();
+
+	}
+
+	// 打印接口耗时日志和接口入参出参日志。
+	public static void logEnd(Object returnList, Object... params) {
+		CRMMobileLogger.paramInfo(3, returnList, params);
+		CRMTimeLogger.timeEnd(3);
+	}
+
+}
