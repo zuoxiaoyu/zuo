@@ -1,0 +1,107 @@
+public class CRMMobileLogger {
+	public static final String CRM_LOGGER_PARA = "crmmobile";
+	private static ILog crmlogger;
+	private static boolean develop = LfwMultiSysFactory.getMultiSysFactory().isDevMode();
+
+	public static void info(String msg) {
+		getMobileLogger().info(msg);
+	}
+
+	public static void paramInfo(List<Map<String, Object>> returnList, Object... params) {
+		paramInfo(3, returnList, params);
+	}
+
+	public static void paramInfo(int i, Object returnList, Object... params) {
+
+		if (!getMobileLogger().isDebugEnabled()) {// 控制输出级别
+			return;
+		}
+
+		String className = Thread.currentThread().getStackTrace()[i].getClassName();
+		String methodName = Thread.currentThread().getStackTrace()[i].getMethodName();
+
+		StringBuilder jsonMsg = new StringBuilder();
+		jsonMsg.append(className).append(".").append(methodName).append("  \t入参：");
+		for (Object param : params) {
+			String insertJsonMsg = JsonVOTransUtil.object2Json(param);
+			jsonMsg.append(insertJsonMsg).append(",");
+		}
+		String returnJsonMsg = JsonVOTransUtil.object2Json(returnList);
+		jsonMsg.append("  \t出参：").append(returnJsonMsg);
+
+		debug(jsonMsg.toString());
+
+	}
+
+	public static void console(String msg) {
+		if (isDevelop())
+			LfwSysOutWrapper.println("crm_debug:" + msg);
+		debug(msg);
+	}
+
+	public static void debug(String msg) {
+		getMobileLogger().debug(msg);
+	}
+
+	public static void error(String msg, Throwable t) {
+		if (isDevelop())
+			LfwSysOutWrapper.println("crm_error:" + msg + ":" + t.getMessage());
+		getMobileLogger().error(msg, t);
+	}
+
+	public static void error(String msg) {
+		if (isDevelop())
+			LfwSysOutWrapper.println("crm_error:" + msg);
+		getMobileLogger().error(msg);
+	}
+
+	public static void error(Throwable e) {
+		if (isDevelop())
+			LfwSysOutWrapper.println("crm_error:" + e.getMessage());
+		getMobileLogger().error(e.getMessage(), e);
+	}
+
+	public static void warn(String msg) {
+		if (isDevelop())
+			LfwSysOutWrapper.println("crm_warn:" + msg);
+		getMobileLogger().warn(msg);
+	}
+
+	public static boolean isDebugEnabled() {
+		return getMobileLogger().isDebugEnabled();
+	}
+
+	public static boolean isInfoEnabled() {
+		return getMobileLogger().isInfoEnabled();
+	}
+
+	public static boolean isWarnEnabled() {
+		return getMobileLogger().isWarnEnabled();
+	}
+
+	public static boolean isErrorEnabled() {
+		return getMobileLogger().isErrorEnabled();
+	}
+
+	private static ILog getMobileLogger() {
+		if (SmartModeDetector.isSmartMode()) {
+			return LfwMultiSysFactory.getMultiSysFactory().getLogInstance(CRM_LOGGER_PARA);
+		} else {
+			if (crmlogger == null) {
+				synchronized (CRMMobileLogger.class) {
+					if (crmlogger == null)
+						crmlogger = LfwMultiSysFactory.getMultiSysFactory().getLogInstance(CRM_LOGGER_PARA);
+				}
+			}
+			return crmlogger;
+		}
+	}
+
+	private static boolean isDevelop() {
+		if (SmartModeDetector.isSmartMode())
+			return LfwMultiSysFactory.getMultiSysFactory().isDevMode();
+		else
+			return develop;
+	}
+
+}
